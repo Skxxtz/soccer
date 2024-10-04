@@ -57,53 +57,74 @@ struct Player {
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-    let args: Vec<String> = env::args().collect();
+    const LINKS:[&'static str;2] = [
+        "https://www.sportschau.de/live-und-ergebnisse/fussball/deutschland-bundesliga/spiele-und-ergebnisse",
+        "https://www.sportschau.de/live-und-ergebnisse/fussball/uefa-champions-league/spiele-und-ergebnisse",
+    ];
+    let mut args: Vec<String> = env::args().collect();
+    let mut competition: usize = 0;
     if args.len() > 1 {
         match args[1].as_str() {
-            "standings" => {
-                let standings = gather_standings().await.unwrap();
-                print_standings(standings);
+            "-c" => {
+                competition = 1;
+                args = args[1..].to_vec();
             }
-            "scores" => {
-                let scores = gather_scores().await.unwrap();
-                print_scores(scores);
-            }
-            "match" => {
-                if args.len() > 2 {
-                    let query = args[2].to_string();
-                    let selected_match = get_lineup_link(query);
-                    let stadium = construct_stadium();
-                    let selected_match = selected_match.await?;
-                    let lineups = get_lineup(selected_match).await?;
-                    let _ = populate_stadium(lineups, stadium);
+            _ => {}
+        }
+        if args.len() > 1 {
+            match args[1].as_str() {
+                "standings" => {
+                    let standings = gather_standings(&LINKS[competition]).await.unwrap();
+                    print_standings(standings);
+                }
+                "scores" => {
+                    let scores = gather_scores(&LINKS[competition]).await.unwrap();
+                    print_scores(scores);
+                }
+                "match" => {
+                    if args.len() > 2 {
+                        let query = args[2].to_string();
+                        let selected_match = get_lineup_link(query, &LINKS[competition]);
+                        let stadium = construct_stadium();
+                        let selected_match = selected_match.await?;
+                        let lineups = get_lineup(selected_match).await?;
+                        let _ = populate_stadium(lineups, stadium);
+                    }
+                }
+                "matchday" => {
+                    let scores = gather_scores(&LINKS[competition]);
+                    let standings = gather_standings(&LINKS[competition]);
+                    let scores = scores.await.unwrap();
+                    let standings = standings.await.unwrap();
+                    print_scores(scores);
+                    print_standings(standings);
+                }
+                "--help" => {
+                    help();
+                }
+                "--version" => {
+                    println!("Soccer version: {}", env!("CARGO_PKG_VERSION"));
+                }
+                _ => {
+                    println!("No such command. {}", args[1]);
+                    print!(
+                        "Available commands:\n→ table\n→ scores\n→ matchday\nDefault: scores\n\n"
+                    );
                 }
             }
-            "matchday" => {
-                let scores = gather_scores().await.unwrap();
-                print_scores(scores);
-                let standings = gather_standings().await.unwrap();
-                print_standings(standings);
-            }
-            "--help" => {
-                help();
-            }
-            "--version" => {
-                println!("Soccer version: {}", env!("CARGO_PKG_VERSION"));
-            }
-            _ => {
-                println!("No such command. {}", args[1]);
-                print!("Available commands:\n→ table\n→ scores\n→ matchday\nDefault: scores\n");
-            }
+        } else {
+            let scores = gather_scores(&LINKS[competition]).await.unwrap();
+            print_scores(scores);
         }
     } else {
-        let scores = gather_scores().await.unwrap();
+        let scores = gather_scores(&LINKS[competition]).await.unwrap();
         print_scores(scores);
     }
+
     Ok(())
 }
 
-
-fn help(){
+fn help() {
     println!("Available Commands:\n");
     println!("soccer                    Displays the current score");
     println!("soccer standings          Displays the current standings");
@@ -114,11 +135,8 @@ fn help(){
     println!("");
 }
 // Score Stuff
-async fn gather_scores() -> Result<Vec<Game>, Error> {
-    let body  = reqwest::get("https://www.sportschau.de/live-und-ergebnisse/fussball/deutschland-bundesliga/spiele-und-ergebnisse")
-        .await?
-        .text()
-        .await?;
+async fn gather_scores(link: &str) -> Result<Vec<Game>, Error> {
+    let body = reqwest::get(link).await?.text().await?;
     let document = Html::parse_document(&body);
     let mut games: Vec<Game> = Vec::<Game>::new();
 
@@ -241,13 +259,9 @@ fn print_scores(info: Vec<Game>) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Standing Stuff
-async fn gather_standings() -> Result<Vec<Team>, Error> {
-    let body = reqwest::get(
-        "https://www.sportschau.de/live-und-ergebnisse/fussball/deutschland-bundesliga/tabelle",
-    )
-    .await?
-    .text()
-    .await?;
+async fn gather_standings(link: &str) -> Result<Vec<Team>, Error> {
+    let link: String = construct_url("", link.to_string(), "/tabelle");
+    let body = reqwest::get(link).await?.text().await?;
     let document = Html::parse_document(&body);
     let sel_tr = Selector::parse("tr[class^='hs_team_id-']").unwrap();
     let mut teams: Vec<Team> = Vec::<Team>::new();
@@ -295,10 +309,10 @@ fn print_standings(standings: Vec<Team>) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Line-Up Stuff
-async fn get_lineup_link(query_string: String) -> Result<String, Error> {
+async fn get_lineup_link(query_string: String, comp_link: &str) -> Result<String, Error> {
     let mut matching_games: Vec<Game> = Vec::new();
     let mut link = String::new();
-    match gather_scores().await {
+    match gather_scores(comp_link).await {
         Ok(games) => {
             matching_games = fuzzy::fuz(query_string, games);
         }
@@ -313,7 +327,7 @@ async fn get_lineup(link: String) -> Result<Vec<LineUp>, Error> {
     let mut line_ups: Vec<_> = Vec::new();
     let mut home_lineup: LineUp = LineUp::new();
     let mut away_lineup: LineUp = LineUp::new();
-    let url = construct_url(link, "/taktische-aufstellung");
+    let url = construct_url("https://www.sportschau.de", link, "/taktische-aufstellung");
     let body = reqwest::get(url).await?.text().await?;
     let document = Html::parse_document(&body);
 
@@ -463,7 +477,7 @@ fn construct_stadium() -> Vec<Vec<String>> {
     }
     field.push(border16c);
     for _ in 0..4 {
-        field.push(mid.clone()); 
+        field.push(mid.clone());
     }
     field.push(bottom);
 
@@ -584,13 +598,12 @@ fn populate_stadium(lineups: Vec<LineUp>, mut stadium: Vec<Vec<String>>) {
 fn top_border(len: usize) -> String {
     format!("╭{}╮", "─".repeat(len + 2))
 }
-fn construct_url(link: String, segment: &str) -> String {
+fn construct_url(base: &str, link: String, segment: &str) -> String {
     let parts: Vec<&str> = link.rsplit("/").collect();
     if parts.is_empty() {
         return link;
     }
     let base_url = &link[..link.len() - parts[0].len() - 1];
-    return format!("https://www.sportschau.de{base_url}{segment}");
+    return format!("{base}{base_url}{segment}");
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-

@@ -10,6 +10,7 @@ Soccer is a Rust-based terminal application that retrieves the scores, standings
     <img alt="application screenshot for match" width="100%" src="images/match.png">
   </picture>
 </div>
+
 ### Display Standings
 <div align="center" style="text-align:center;">
   <picture>
@@ -24,7 +25,60 @@ Soccer is a Rust-based terminal application that retrieves the scores, standings
   </picture>
 </div>
 
-## Getting Started
+
+## 🚀 Installation
+
+### Prerequisites
+
+- [Rust](https://www.rust-lang.org/tools/install)
+
+To check if Rust is installed:
+
+```bash
+rustc --version
+```
+
+If not, install it using [rustup](https://rustup.rs/):
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+---
+
+### 🔧 Build and Install
+
+Clone the repository:
+
+``` bash
+git clone https://github.com/yourusername/yourproject.git
+cd yourproject
+```
+
+Then build and install the app:
+
+```bash
+cargo install --path .
+```
+
+This will compile the app and place the binary in your local Cargo bin directory (usually `~/.cargo/bin`).
+
+You can now run the app from anywhere:
+
+```bash
+yourappname
+```
+---
+
+### 💡 Updating
+
+To update to the latest version, just pull the repo and reinstall:
+
+```bash
+git pull origin main
+cargo install --path .
+```
+
 
 ## Usage
 -   **soccer**                                     » Displays the current scores

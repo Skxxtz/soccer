@@ -4,7 +4,7 @@ Soccer is a Rust-based terminal application that retrieves the scores, standings
 
 ## Table of Contents
 - [Features](#features)
-- [Installation](#installation)
+- [Installation](#-installation)
 - [Usage](#usage)
 
 ## Features

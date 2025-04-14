@@ -410,7 +410,7 @@ async fn get_lineup(link: String) -> Result<Vec<LineUp>, Error> {
     Ok(line_ups)
 }
 fn construct_stadium() -> Vec<Vec<String>> {
-    let mut field: Vec<Vec<String>> = Vec::new();
+    let mut field: Vec<Vec<String>> = Vec::with_capacity(19);
     let mid_space = " ".to_string().repeat(33);
     let space_16 = " ".to_string().repeat(10);
     let space_full = " ".to_string().repeat(44);

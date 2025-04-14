@@ -1,7 +1,11 @@
 # Soccer
 ## TL;DR:
-Soccer is a Rust-based terminal application that retrieves the scores, standings, and lineups for the current matchday of the German Bundesliga and UEFA Champions League.
+Soccer is a Rust-based terminal application that retrieves the scores, standings, and lineups for the current match day of the German Bundesliga and UEFA Champions League.
 
+## Table of Contents
+- [Features](#features)
+- [Installation](#installation)
+- [Usage](#usage)
 
 ## Features
 ### Display Lineups

@@ -178,23 +178,19 @@ async fn gather_scores(link: &str) -> Result<Vec<Game>, Error> {
 
         let match_status: Vec<_> = element.select(&sel_status).collect();
         let stat = match_status[0].inner_html();
-        let status = if stat == "Beendet" {
-            String::from("OVER")
-        } else if stat == "Live" {
-            String::from(format!("LIVE"))
-        } else {
-            String::from("UPCOMING")
+        let status = match stat.as_str() {
+            "Beendet" => String::from("OVER"),
+            "Live" => String::from("Live"),
+            _ => String::from("UPCOMING")
         };
 
-        let mut link: String = String::new();
-        if let Some(href) = element
+        let link = element
             .select(&sel_link)
             .next()
             .and_then(|el| el.select(&Selector::parse("a").unwrap()).next())
             .and_then(|a| a.value().attr("href"))
-        {
-            link = href.to_string();
-        }
+            .map(|s| s.to_string())
+            .unwrap_or_default();
 
         games.push(Game {
             home,

@@ -7,7 +7,6 @@ use scraper::{selectable::Selectable, ElementRef, Html, Selector};
 use std::env;
 mod fuzzy;
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
 #[derive(Debug)]
 pub struct Game {
     home: String,
@@ -53,7 +52,6 @@ struct Player {
     name: String,
     number: String,
 }
-////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
@@ -224,7 +222,7 @@ fn print_scores(info: Vec<Game>) {
         let date_difference: i32 = item.timestamp.day() as i32 - now.day() as i32;
         let mut date = String::new();
 
-        if date_difference == 0 && hour_difference <= 0 {
+        if hour_difference <= 0 {
             date = format!("{}", item.status);
         } else if date_difference == 0 {
             date = format!(
@@ -245,7 +243,7 @@ fn print_scores(info: Vec<Game>) {
                 item.timestamp.hour(),
                 item.timestamp.minute()
             );
-        }
+        } 
 
         table.add_row(row![
             cell!(item.home),

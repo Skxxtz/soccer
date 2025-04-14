@@ -20,8 +20,8 @@ pub struct Game {
 struct Team {
     standing: String,
     name: String,
-    short: String,
-    abbrev: String,
+    _short: String,
+    _abbrev: String,
     games: String,
     wins: String,
     draws: String,
@@ -71,7 +71,7 @@ async fn main() -> Result<(), Error> {
         }
         if args.len() > 1 {
             match args[1].as_str() {
-                "standings" => {
+                "standings" | "table" | "standing" => {
                     let standings = gather_standings(&LINKS[competition]).await.unwrap();
                     print_standings(standings);
                 }
@@ -104,10 +104,8 @@ async fn main() -> Result<(), Error> {
                     println!("Soccer version: {}", env!("CARGO_PKG_VERSION"));
                 }
                 _ => {
-                    println!("No such command. {}", args[1]);
-                    print!(
-                        "Available commands:\n→ table\n→ scores\n→ matchday\nDefault: scores\n\n"
-                    );
+                    println!("Command not recognized. {}", args[1]);
+                    help();
                 }
             }
         } else {
@@ -144,7 +142,7 @@ async fn gather_scores(link: &str) -> Result<Vec<Game>, Error> {
         let sel_status = Selector::parse("div.match-status").unwrap();
         let sel_score_home = Selector::parse("div.match-result-home").unwrap();
         let sel_score_away = Selector::parse("div.match-result-away").unwrap();
-        let sel_minute = Selector::parse("div.current-minute").unwrap();
+        let _sel_minute = Selector::parse("div.current-minute").unwrap();
         let sel_link = Selector::parse("div.match-more").unwrap();
 
         let teams: Vec<_> = element.select(&sel_teams).collect();
@@ -270,8 +268,8 @@ async fn gather_standings(link: &str) -> Result<Vec<Team>, Error> {
             let team = Team {
                 standing: iter.next().unwrap(),
                 name: iter.next().unwrap(),
-                short: iter.next().unwrap(),
-                abbrev: iter.next().unwrap(),
+                _short: iter.next().unwrap(),
+                _abbrev: iter.next().unwrap(),
                 games: iter.next().unwrap(),
                 wins: iter.next().unwrap(),
                 draws: iter.next().unwrap(),
@@ -308,18 +306,11 @@ fn print_standings(standings: Vec<Team>) {
 
 // Line-Up Stuff
 async fn get_lineup_link(query_string: String, comp_link: &str) -> Result<String, Error> {
-    let mut matching_games: Vec<Game> = Vec::new();
-    let mut link = String::new();
-    match gather_scores(comp_link).await {
-        Ok(games) => {
-            matching_games = fuzzy::fuz(query_string, games);
-        }
-        Err(e) => return Err(e),
-    }
-    if let Some(probable) = matching_games.get(0) {
-        link = probable.link.clone();
-    };
-    return Ok(link);
+    let matching_games = gather_scores(comp_link).await.map(|games| fuzzy::fuz(query_string, games))?;
+    Ok(matching_games
+        .get(0)
+        .and_then(|g| Some(g.link.clone()))
+        .unwrap_or_default())
 }
 async fn get_lineup(link: String) -> Result<Vec<LineUp>, Error> {
     let mut line_ups: Vec<_> = Vec::new();

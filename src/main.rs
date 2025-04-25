@@ -179,9 +179,9 @@ async fn gather_scores(link: &str) -> Result<Vec<Game>, Error> {
         let match_status: Vec<_> = element.select(&sel_status).collect();
         let stat = match_status[0].inner_html();
         let status = match stat.as_str() {
-            "Beendet" => String::from("OVER"),
+            "Beendet" => String::from("Over"),
             "Live" => String::from("Live"),
-            _ => String::from("UPCOMING")
+            _ => String::new()
         };
 
         let link = element
@@ -212,12 +212,11 @@ fn print_scores(info: Vec<Game>) {
     table.set_format(*format::consts::FORMAT_BOX_CHARS);
     table.add_row(row!["Home", "", "Away", "Time",]);
     for item in info {
-        let hour_difference: i32 = item.timestamp.hour() as i32 - now.hour() as i32;
         let date_difference: i32 = item.timestamp.day() as i32 - now.day() as i32;
         let mut date = String::new();
 
-        if hour_difference <= 0 {
-            date = format!("{}", item.status);
+        if item.status == "Live" || item.status == "Over" {
+            date = item.status
         } else if date_difference == 0 {
             date = format!(
                 "Today, {:2}:{:2}",
@@ -237,7 +236,9 @@ fn print_scores(info: Vec<Game>) {
                 item.timestamp.hour(),
                 item.timestamp.minute()
             );
-        } 
+        } else {
+            println!("{:?}", date_difference);
+        }
 
         table.add_row(row![
             cell!(item.home),

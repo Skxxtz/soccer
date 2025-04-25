@@ -40,7 +40,7 @@ impl LineUp {
     fn new() -> Self {
         LineUp {
             team: String::new(),
-            players: Vec::new(),
+            players: Vec::with_capacity(16),
         }
     }
 }
@@ -181,7 +181,7 @@ async fn gather_scores(link: &str) -> Result<Vec<Game>, Error> {
         let status = match stat.as_str() {
             "Beendet" => String::from("Over"),
             "Live" => String::from("Live"),
-            _ => String::new()
+            _ => String::new(),
         };
 
         let link = element
@@ -303,14 +303,16 @@ fn print_standings(standings: Vec<Team>) {
 
 // Line-Up Stuff
 async fn get_lineup_link(query_string: String, comp_link: &str) -> Result<String, Error> {
-    let matching_games = gather_scores(comp_link).await.map(|games| fuzzy::fuz(query_string, games))?;
+    let matching_games = gather_scores(comp_link)
+        .await
+        .map(|games| fuzzy::fuz(query_string, games))?;
     Ok(matching_games
         .get(0)
         .and_then(|g| Some(g.link.clone()))
         .unwrap_or_default())
 }
 async fn get_lineup(link: String) -> Result<Vec<LineUp>, Error> {
-    let mut line_ups: Vec<_> = Vec::new();
+    let mut line_ups: Vec<LineUp> = Vec::with_capacity(2);
     let mut home_lineup: LineUp = LineUp::new();
     let mut away_lineup: LineUp = LineUp::new();
     let url = construct_url("https://www.sportschau.de", link, "/taktische-aufstellung");
